@@ -1,4 +1,6 @@
-kingdb <- KingCounty2001_data[,names(KingCounty2001_data)%in%c("welfare","married","smoker","education","age","wpre","bwt")]
+
+##not sure-why this isn't committing
+##kingdb <- KingCounty2001_data[,names(KingCounty2001_data)%in%c("welfare","married","smoker","education","age","wpre","bwt")]
 kingdb$smoker2 <- 0
 kingdb$smoker2[kingdb$smoker=="Y"] <- 1
 kingdb$college <- 0

@@ -1,42 +1,42 @@
+##Need to first load dataset
+##load("NorthCarolina_data.dat")
 
-##not sure-why this isn't committing
-##kingdb <- KingCounty2001_data[,names(KingCounty2001_data)%in%c("welfare","married","smoker","education","age","wpre","bwt")]
-kingdb$smoker2 <- 0
-kingdb$smoker2[kingdb$smoker=="Y"] <- 1
-kingdb$college <- 0
-kingdb$college[kingdb$education>=17]<-1
+kingdb <- infants
+kingdb <- kingdb[,names(kingdb)%in%c("weight","smoker","sex","weeks","dTime")]
+##of this I only need low birth weight (derived from weight), the gender
+##variable, and weeks(gestation period)
+
 kingdb$lbw <-0
-kingdb$lbw[kingdb$bwt<2500]<-1
-kingdb$agec <- (kingdb$age-30)/5
-kingdb$wprec <- (kingdb$wpre-140)/20
-kingdb$welfare <- as.numeric(kingdb$welfare)
-kingdb$married <- as.numeric(kingdb$married)
-
-kingdb2 <- kingdb[,names(kingdb)%in%c("welfare","married","smoker2","college","agec","wprec","lbw")]
-kingdb2noY <- kingdb2[,-5]
+kingdb$lbw[kingdb$weight<2.5]<-1
+kingdb$Y <-0
+kingdb$Y[kingdb$dTime <=365] <- 1
+kingdb$weeksm <- kingdb$weeks-median(kingdb$weeks)
+kingdb2 <- kingdb[,names(kingdb)%in%c("Y","sex","smoker","weeksm","lbw")]
+kingdb2noY <- kingdb2[,names(kingdb2)%in%c("sex","smoker","weeksm","lbw")]
 store <- 0
 
+mod1totdat <- glm(Y~., data=kingdb2, family ="binomial")
+vectorcoeffs <- coef(mod1totdat)
+datawithYq2b <- kingdb2
+datanoYq2b <- kingdb2noY
 
-simul <- function(n,beta0,betaw)
+simul <- function(n,vectorcoeffs,dataset,datasetnoY)
 {
-  samp <- sample(1:dim(kingdb2)[1],size=n,replace=TRUE)
-  sampledbnoY <- kingdb2noY[samp,]
-  sampledbnoY <- cbind(1,sampledbnoY)
-  ##sampledb <- kingdb2[samp,]
-  vectorcoeffs <- c(beta0,-0.71,betaw,0.69,-0.47,0.11,-0.22)
-  ##print(sampledbnoY)
-  ##print(vectorcoeffs)
-  ##print(dim(sampledbnoY))
-  ##print(length(vectorcoeffs))
-  logitphat <- as.matrix(sampledbnoY)%*%vectorcoeffs
+  samp <- sample(1:dim(dataset)[1],size=n,replace=TRUE)
+  samplednoY <- datasetnoY[samp,]
+  samplednoY <- cbind(1,samplednoY)
+  
+  logitphat <- as.matrix(samplednoY)%*%vectorcoeffs
   phat <- exp(logitphat)/(1+exp(logitphat))
   randprob <- runif(n,0,1)
-  sampledbnoY$y <- 0
-  sampledbnoY$y[phat>randprob] <- 1
-  ##sampledbnoY$phat <- phat
-  ##sampledbnoY$randprob <- randprob
-  fit0 <- glm(y~.,family="binomial",data=sampledbnoY[,names(sampledbnoY)%in%c("welfare","married","smoker2","college","agec","wprec","y")])
-  pvalue <- coef(summary(fit0))["welfare",4]
+  samplednoY$y <- 0
+  samplednoY$y[phat>randprob] <- 1
+  ##samplednoY$phat <- phat
+  ##samplednoY$randprob <- randprob
+  ##print(names(samplednoY))
+  fit0 <- glm(y~lbw+smoker+sex+weeksm,family="binomial",data=samplednoY[,names(samplednoY)%in%c("1","lbw","smoker","sex","weeksm","y")])
+  ##print(summary(fit0))
+  pvalue <- coef(summary(fit0))[c("lbw","smoker","sex","weeksm"),4]
   simul <- pvalue
   simul
 }
